@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Divora Download Lab</title>
+<meta name="description" content="Download video & musik TikTok dan Facebook — Divora Download Lab" />
+<style>
+  :root{
+    --bg:#0b0910; --card:#18121f; --accent:#7d5aff; --accent-2:#b399ff;
+    --muted:#bfb7ff; --glass:rgba(255,255,255,0.03);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; display:flex; flex-direction:column;
+    background:
+      radial-gradient(800px 400px at 10% 10%, rgba(125,90,255,0.10), transparent 10%),
+      radial-gradient(600px 300px at 90% 90%, rgba(180,150,255,0.06), transparent 10%),
+      var(--bg);
+    color:var(--muted); font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+
+  header{padding:40px 20px; text-align:center}
+  header h1{margin:0;color:var(--accent-2);font-size:1.8rem;letter-spacing:0.6px}
+  header p{margin:6px 0 0;color:#9b86ff;opacity:0.9}
+
+  main{flex:1; display:flex; align-items:center; justify-content:center; padding:20px}
+  .wrap{width:100%; max-width:760px}
+
+  .card{
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border:1px solid rgba(150,120,255,0.08); padding:20px; border-radius:12px; box-shadow:0 8px 30px rgba(40,20,80,0.45);
+  }
+
+  .row{display:flex; gap:12px; align-items:center}
+  .input{
+    flex:1; display:flex; gap:10px; align-items:center;
+  }
+  input[type="url"]{
+    width:100%; padding:12px 14px; border-radius:10px; border:none; outline:none;
+    background:var(--glass); color:var(--muted); font-size:0.96rem;
+  }
+
+  .actions{display:flex; gap:10px; margin-top:12px}
+  button{
+    background:var(--accent); border:none; color:white; padding:10px 14px; border-radius:10px; cursor:pointer;
+    font-weight:600; letter-spacing:0.2px;
+  }
+  .btn-ghost{background:transparent; border:1px solid rgba(125,90,255,0.18); color:var(--muted)}
+  .btn-muted{background:#2a2335}
+
+  .hint{margin-top:12px;color:#a89cff;font-size:0.88rem;opacity:0.9}
+
+  .result{margin-top:18px; background:rgba(255,255,255,0.02); padding:14px; border-radius:10px; border:1px solid rgba(120,90,255,0.05)}
+  .result h3{margin:0 0 8px 0; color:var(--accent-2); font-size:1rem}
+  .links{display:flex; flex-direction:column; gap:8px}
+  .link{
+    display:flex; justify-content:space-between; align-items:center; gap:12px;
+    padding:10px; background:linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.0));
+    border-radius:8px; border:1px solid rgba(255,255,255,0.02);
+  }
+  .label{font-size:0.95rem; color:var(--muted)}
+  .small{font-size:0.85rem; opacity:0.9; color:#d7cffb}
+
+  a.download{
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    color:white; text-decoration:none; padding:8px 12px; border-radius:8px; font-weight:700;
+  }
+
+  footer{padding:18px; text-align:center; font-size:0.85rem; color:#9b86ff; opacity:0.9}
+  .meta{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; font-size:0.85rem; color:#9b86ff}
+  .error{color:#ff9bba; font-weight:700}
+  @media (max-width:520px){
+    header h1{font-size:1.4rem}
+    .row{flex-direction:column; align-items:stretch}
+    .actions{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Divora Download Lab</h1>
+  <p>Download video & musik dari TikTok & Facebook — Minimalis • Ungu dark</p>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="card" role="region" aria-label="Divora Downloader">
+      <div class="row">
+        <div class="input" style="flex:1">
+          <input id="urlInput" type="url" placeholder="Tempel link TikTok atau Facebook di sini..." aria-label="URL video atau posting" />
+        </div>
+        <div style="width:140px; display:flex; flex-direction:column;">
+          <button id="btnFetch" title="Fetch" aria-label="Ambil link">Ambil</button>
+          <button id="btnClear" class="btn-ghost btn-muted" style="margin-top:8px" title="Clear">Clear</button>
+        </div>
+      </div>
+
+      <div class="actions" style="justify-content:flex-end">
+        <button id="btnVideo" class="btn-ghost" title="Download video setelah proses">Download Video</button>
+        <button id="btnAudio" class="btn-ghost" title="Ekstrak audio (MP3)">Download Audio (MP3)</button>
+      </div>
+
+      <div class="hint">Mau hasil lebih baik? Gunakan link asli postingan (bukan share dari app).</div>
+
+      <div id="resultArea" class="result" style="display:none" aria-live="polite">
+        <h3>Hasil</h3>
+        <div id="status" class="small">Menunggu input...</div>
+        <div id="links" class="links" style="margin-top:8px"></div>
+        <div id="meta" class="meta"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>© 2025 Divora Download Lab — Gunakan dengan bijak. Jangan pakai buat melanggar hak cipta.</footer>
+
+<script>
+/*
+  GANTI INI dengan endpoint API yang lo pilih.
+  API harus menerima POST JSON: { url: "..." , type: "video"|"audio" }
+  dan mengembalikan JSON yang minimal salah satu dari:
+  { links: [{label:"1080p MP4", url:"..."}, ...], meta:{source:"tiktok", title:"..."} }
+  OR for audio-only:
+  { audio: {label:"MP3 128kbps", url:"..."}, meta: {...} }
+
+  Sesuaikan parsing di bawah kalau API lo beda.
+*/
+const API_ENDPOINT = "YOUR_API_ENDPOINT_HERE";
+
+const $ = id => document.getElementById(id);
+const status = $("status");
+const links = $("links");
+const meta = $("meta");
+const resultArea = $("resultArea");
+
+function showError(msg){
+  status.innerHTML = '<span class="error">'+msg+'</span>';
+  links.innerHTML = "";
+  meta.innerHTML = "";
+  resultArea.style.display = "block";
+}
+
+function showWaiting(){
+  status.textContent = "Memproses... sabar dikit.";
+  links.innerHTML = "";
+  meta.innerHTML = "";
+  resultArea.style.display = "block";
+}
+
+function renderResponse(data, want="video"){
+  links.innerHTML = "";
+  meta.innerHTML = "";
+
+  if (!data) { showError("Response kosong dari server."); return; }
+
+  // meta
+  if (data.meta){
+    const items = [];
+    if (data.meta.source) items.push("Sumber: "+data.meta.source);
+    if (data.meta.title) items.push("Judul: "+data.meta.title);
+    if (data.meta.duration) items.push("Durasi: "+data.meta.duration);
+    meta.textContent = items.join(" • ");
+  }
+
+  // video links
+  if (data.links && data.links.length){
+    status.textContent = "Pilihan video:";
+    data.links.forEach(it=>{
+      const el = document.createElement("div");
+      el.className = "link";
+      el.innerHTML = '<div><div class="label">'+escapeHtml(it.label || "Video")+'</div><div class="small">'+(it.filesize ? it.filesize : '')+'</div></div>' +
+                     '<div><a class="download" href="'+encodeURI(it.url)+'" target="_blank" rel="noopener noreferrer">Download</a></div>';
+      links.appendChild(el);
+    });
+  }
+
+  // audio alternatives
+  if (data.audio){
+    // audio could be object or array
+    const auds = Array.isArray(data.audio) ? data.audio : [data.audio];
+    const head = document.createElement("div");
+    head.className = "link";
+    head.innerHTML = '<div><div class="label">Audio (MP3)</div><div class="small">Ekstrak audio dari video</div></div><div></div>';
+    links.appendChild(head);
+
+    auds.forEach(it=>{
+      const el = document.createElement("div");
+      el.className = "link";
+      el.innerHTML = '<div><div class="label">'+escapeHtml(it.label || "MP3")+'</div><div class="small">'+(it.bitrate ? it.bitrate : '')+'</div></div>' +
+                     '<div><a class="download" href="'+encodeURI(it.url)+'" target="_blank" rel="noopener noreferrer">Download</a></div>';
+      links.appendChild(el);
+    });
+  }
+
+  // fallback: if API returns single url
+  if (!data.links && !data.audio && data.url){
+    const el = document.createElement("div");
+    el.className = "link";
+    el.innerHTML = '<div class="label">Link</div><div><a class="download" href="'+encodeURI(data.url)+'" target="_blank">Download</a></div>';
+    links.appendChild(el);
+    status.textContent = "Link langsung:";
+  }
+
+  resultArea.style.display = "block";
+}
+
+function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+async function fetchFromAPI(url, type){
+  showWaiting();
+  try {
+    const res = await fetch(API_ENDPOINT, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ url, type })
+    });
+    if (!res.ok){
+      const txt = await res.text().catch(()=>"");
+      showError("Server error: "+res.status + (txt ? (" — "+txt) : ""));
+      return null;
+    }
+    const data = await res.json().catch(()=>null);
+    if (!data) { showError("Gagal parsing JSON."); return null; }
+    renderResponse(data, type);
+    return data;
+  } catch (e){
+    showError("Gagal koneksi ke API.");
+    console.error(e);
+    return null;
+  }
+}
+
+/* UI handlers */
+$("btnFetch").addEventListener("click", ()=>{
+  const url = $("urlInput").value.trim();
+  if (!url) return showError("Masukin link dulu, bro.");
+  // default fetch both (server may return both video & audio)
+  fetchFromAPI(url, "video");
+});
+
+$("btnVideo").addEventListener("click", ()=>{
+  const url = $("urlInput").value.trim();
+  if (!url) return showError("Masukin link dulu, bro.");
+  fetchFromAPI(url, "video");
+});
+
+$("btnAudio").addEventListener("click", ()=>{
+  const url = $("urlInput").value.trim();
+  if (!url) return showError("Masukin link dulu, bro.");
+  fetchFromAPI(url, "audio");
+});
+
+$("btnClear").addEventListener("click", ()=>{
+  $("urlInput").value = "";
+  links.innerHTML = "";
+  meta.innerHTML = "";
+  status.textContent = "Menunggu input...";
+  resultArea.style.display = "none";
+});
+
+/* allow Enter to trigger fetch */
+$("urlInput").addEventListener("keydown", (e)=>{
+  if (e.key === "Enter") { e.preventDefault(); $("btnFetch").click(); }
+});
+</script>
+</body>
+</html>
